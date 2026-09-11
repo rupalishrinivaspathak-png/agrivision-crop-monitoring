@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriVision — Crop Health Monitor</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f4f0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #1B5E20;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: #A5D6A7;
+            margin-top: 4px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h3 {
+            color: #1B5E20;
+            margin-bottom: 10px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #cropImg {
+            width: 100%;
+            border-radius: 8px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .img-placeholder {
+            width: 100%;
+            height: 220px;
+            border-radius: 8px;
+            background: #f5f5f5;
+            border: 2px dashed #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 13px;
+            gap: 8px;
+        }
+
+        .disease-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: #c0392b;
+            margin-bottom: 5px;
+        }
+
+        .disease-name.healthy {
+            color: #2E7D32;
+        }
+
+        .disease-name.waiting {
+            color: #999;
+            font-size: 15px;
+            font-weight: normal;
+        }
+
+        .conf-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .conf-bar-wrap {
+            flex: 1;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .conf-bar {
+            height: 100%;
+            background: #2E7D32;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .conf-bar.danger {
+            background: #c0392b;
+        }
+
+        .conf-pct {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            min-width: 40px;
+        }
+
+        .rec-box {
+            background: #E8F5E9;
+            border-left: 4px solid #2E7D32;
+            padding: 10px 14px;
+            border-radius: 0 8px 8px 0;
+            font-size: 13px;
+            color: #333;
+            line-height: 1.5;
+            margin-top: 10px;
+        }
+
+        .zone-card {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #e0e0e0;
+            display: none;
+        }
+
+        .zone-label {
+            font-size: 11px;
+            color: #666;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .zone-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 12px;
+        }
+
+        .zone-item:last-child {
+            border-bottom: none;
+        }
+
+        .timestamp {
+            font-size: 11px;
+            color: #999;
+            text-align: right;
+            margin-top: 8px;
+        }
+
+        .hist-list {
+            list-style: none;
+        }
+
+        .hist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+
+        .hist-item:last-child {
+            border-bottom: none;
+        }
+
+        .hist-name {
+            font-weight: 500;
+        }
+
+        .hist-time {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .badge-d {
+            background: #FFEBEE;
+            color: #c0392b;
+        }
+
+        .badge-h {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        .status-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2E7D32;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.3
+            }
+        }
+
+        .btn-refresh {
+            width: 100%;
+            padding: 14px;
+            background: #2E7D32;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-refresh:hover {
+            background: #1B5E20;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>🌿 AgriVision</h1>
+        <p>AI-Powered Orange Crop Health Monitoring</p>
+    </div>
+
+    <div class="container">
+
+        <!-- Image Card -->
+        <div class="card">
+            <h3>📷 Latest Crop Image</h3>
+            <div id="imgPh" class="img-placeholder">
+                <span style="font-size:32px">🍊</span>
+                <span>Waiting for drone image...</span>
+            </div>
+            <img id="cropImg" style="display:none" alt="Crop image">
+        </div>
+
+        <!-- Result Card -->
+        <div class="card">
+            <h3>🔬 AI Detection Result</h3>
+            <div id="dName" class="disease-name waiting">Waiting for image...</div>
+            <div class="conf-row" id="confRow" style="display:none">
+                <div class="conf-bar-wrap">
+                    <div class="conf-bar" id="confBar"></div>
+                </div>
+                <div class="conf-pct" id="confPct">0%</div>
+            </div>
+            <div class="rec-box" id="recBox" style="display:none"></div>
+
+            <!-- Zone Analysis -->
+            <div class="zone-card" id="zoneCard">
+                <div class="zone-label">🔍 Leaf Zone Analysis</div>
+                <div id="zoneList"></div>
+            </div>
+
+            <div class="timestamp" id="ts"></div>
+        </div>
+
+        <!-- History Card -->
+        <div class="card">
+            <h3>📋 Recent Detections</h3>
+            <ul class="hist-list" id="histList">
+                <li style="font-size:13px;color:#999;text-align:center;padding:12px 0">
+                    No detections yet
+                </li>
+            </ul>
+        </div>
+
+        <!-- Status Card -->
+        <div class="card">
+            <div class="status-card">
+                <div class="live-dot"></div>
+                <span>Auto-refreshing every 5 seconds &nbsp;|&nbsp; Server:
+                    <span style="color:#2E7D32;font-weight:bold">Online</span>
+                </span>
+            </div>
+        </div>
+
+        <button class="btn-refresh" onclick="fetchResult()">🔄 Refresh Now</button>
+
+    </div>
+
+    <script>
+        let history2 = [];
+
+        function fetchResult() {
+            fetch('/get_result')
+                .then(r => r.json())
+                .then(d => {
+                    if (!d.disease || d.disease === 'Waiting for image...') return;
+
+                    const clean = d.disease.replace(/_/g, ' ');
+                    const isH = d.disease.toLowerCase().includes('healthy');
+                    const pct = d.confidence || 0;
+
+                    // Disease name
+                    const dn = document.getElementById('dName');
+                    dn.textContent = clean;
+                    dn.className = 'disease-name' + (isH ? ' healthy' : '');
+
+                    // Confidence bar
+                    document.getElementById('confBar').style.width = pct + '%';
+                    document.getElementById('confBar').className =
+                        'conf-bar' + (pct < 60 ? ' danger' : '');
+                    document.getElementById('confPct').textContent = pct + '%';
+                    document.getElementById('confRow').style.display = 'flex';
+
+                    // Recommendation
+                    if (d.recommendation) {
+                        const rb = document.getElementById('recBox');
+                        rb.textContent = '💊 ' + d.recommendation;
+                        rb.style.display = 'block';
+                    }
+
+                    // Zone results
+                    if (d.zone_results && d.zone_results.length > 0) {
+                        document.getElementById('zoneCard').style.display = 'block';
+                        document.getElementById('zoneList').innerHTML =
+                            d.zone_results.map(z => `
+              <div class="zone-item">
+                <span>Zone ${z.zone}: ${z.disease.replace(/_/g, ' ')}</span>
+                <span style="font-weight:bold; color:${z.disease.toLowerCase().includes('healthy')
+                                    ? '#2E7D32' : '#c0392b'
+                                }">${z.confidence}%</span>
+              </div>
+            `).join('');
+
+                        document.getElementById('ts').textContent =
+                            `${d.leaf_count} leaf zones analysed | Last updated: ${d.timestamp}`;
+                    } else {
+                        document.getElementById('ts').textContent =
+                            'Last updated: ' + (d.timestamp || '--');
+                    }
+
+                    // Image
+                    const img = document.getElementById('cropImg');
+                    const ph = document.getElementById('imgPh');
+                    img.src = '/latest_image?t=' + Date.now();
+                    img.onload = () => {
+                        img.style.display = 'block';
+                        ph.style.display = 'none';
+                    };
+
+                    // History
+                    history2.unshift({ clean, pct, isH, time: d.timestamp });
+                    if (history2.length > 5) history2.pop();
+                    document.getElementById('histList').innerHTML =
+                        history2.map(x => `
+            <li class="hist-item">
+              <div>
+                <div class="hist-name">${x.clean}</div>
+                <div class="hist-time">${x.time || ''}</div>
+              </div>
+              <span class="badge ${x.isH ? 'badge-h' : 'badge-d'}">${x.pct}%</span>
+            </li>
+          `).join('');
+                })
+                .catch(() => { });
+        }
+
+        fetchResult();
+        setInterval(fetchResult, 5000);
+    </script>
+
+</body>
+
+</html>
